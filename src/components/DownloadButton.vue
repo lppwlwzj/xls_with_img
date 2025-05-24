@@ -1,26 +1,38 @@
 <template>
-    <div class="download-container">
-        <div class="filter-section">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
-                end-placeholder="结束日期" :shortcuts="dateShortcuts" value-format="YYYY-MM-DD" @change="handleDateChange"
-                class="date-picker" />
+    <div>
+        <div v-if="!isPasswordVerified" class="password-container">
+            <div class="password-input">
+                <el-input v-model="password" type="password" placeholder="请输入密码" @keyup.enter="verifyPassword" />
+                <el-button type="primary" @click="verifyPassword">登录</el-button>
+            </div>
+            <div v-if="passwordError" class="password-error">
+                密码错误，请重试
+            </div>
         </div>
-        <div class="format-selector">
-            <label>选择文件格式：</label>
-            <select v-model="selectedFormat" class="format-select">
-                <option value="xlsx">.xlsx (Excel 2007+)</option>
-                <option value="xls">.xls (Excel 97-2003)</option>
-            </select>
-        </div>
-        <button class="download-button" @click="handleDownload" :disabled="isDownloading">
-            <span v-if="isDownloading">
-                <i class="loading-icon"></i>
-                下载中 {{ downloadProgress }}%
-            </span>
-            <span v-else>下载Excel</span>
-        </button>
-        <div v-if="downloadStatus" class="download-status" :class="downloadStatus.type">
-            {{ downloadStatus.message }}
+
+        <div v-else class="download-container">
+            <div class="filter-section">
+                <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
+                    end-placeholder="结束日期" :shortcuts="dateShortcuts" value-format="YYYY-MM-DD"
+                    @change="handleDateChange" class="date-picker" />
+            </div>
+            <div class="format-selector">
+                <label>选择文件格式：</label>
+                <select v-model="selectedFormat" class="format-select">
+                    <option value="xlsx">.xlsx (Excel 2007+)</option>
+                    <option value="xls">.xls (Excel 97-2003)</option>
+                </select>
+            </div>
+            <button class="download-button" @click="handleDownload" :disabled="isDownloading">
+                <span v-if="isDownloading">
+                    <i class="loading-icon"></i>
+                    下载中 {{ downloadProgress }}%
+                </span>
+                <span v-else>下载Excel</span>
+            </button>
+            <div v-if="downloadStatus" class="download-status" :class="downloadStatus.type">
+                {{ downloadStatus.message }}
+            </div>
         </div>
     </div>
 </template>
@@ -28,158 +40,22 @@
 <script>
 import ExcelJS from 'exceljs';
 import axios from 'axios';
-import { ElDatePicker } from 'element-plus';
+import { ElDatePicker, ElInput, ElButton } from 'element-plus';
 import 'element-plus/dist/index.css';
 
 
 export default {
     name: 'DownloadButton',
     components: {
-        ElDatePicker
+        ElDatePicker,
+        ElInput,
+        ElButton
     },
     data() {
         return {
-            testData: [
-                {
-
-                    "service_id": 165,
-                    "id": 287,
-                    "customer_id": "u7ev",
-                    "customer": "test",
-                    "dateTime": "2025-05-23",
-                    "daiyaTime": "2025-05-23",
-                    "doctor": "test",
-                    "proxy": "test",
-                    "porcelain": "爱尔创 (国产全瓷)",
-                    "tiepianColor": "red",
-                    "CAD": "csa",
-                    "checi": "dwsqcx",
-                    frontPhoto: "http://e.hiphotos.baidu.com/image/pic/item/a1ec08fa513d2697e542494057fbb2fb4316d81e.jpg",
-                    // "frontPhoto": "https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/7KWUHjdiqmwmd87292cf83ea8c4f7aa13010027ba931.jpg",
-                    "adviceContent": "dewscwcfedswcxdew",
-                    "leftFv": "https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/EVpTOxCwJ40Tb39ebf1c7b297c5edce6088e18d2f8dd.png",
-                    "rightFv": "",
-                    "front": "",
-                    "leftFvEdge": "",
-                    "rightFvEdge": "",
-                    "intentImg": "undefined",
-                    "designAdvice": "cedijn",
-                    "designList": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/jjmmMTSZxkUL0bd7b8f194b4a42973c1383805eb926c.jpg\",\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/XYhTb6eInfrcd8254f61f5cece9166890c868763a7b7.jpg\"]",
-                    "bianyuanOpen": "false",
-                    "bianyuanValue": "0",
-                    "roundOpen": "false",
-                    "roundValue": "0",
-                    "luochaOpen": "false",
-                    "luochaValue": "0",
-                    "angleOpen": "false",
-                    "angleValue": "0",
-                    "jiandunOpen": "false",
-                    "jiandunValue": "0",
-                    "qieduanOpen": "false",
-                    "qieduanValue": "0",
-                    "textureOpen": "false",
-                    "textureValue": "0",
-                    "dotOpen": "false",
-                    "dotValue": "0",
-                    "touliangOpen": "false",
-                    "touliangValue": "0",
-                    "qieduanLinearsOpen": "false",
-                    "qieduanLinearsValue": "0",
-                    "thicknessOpen": "false",
-                    "thicknessValue": "0",
-                    "createtime": "2025-05-23T15:53:11.000Z",
-                    "isPrivacy": 0,
-                    "problem": "dsxwxssw",
-                    "shangci": null,
-                    "shangyou": null,
-                    "checiImg": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/sn24spZEkL9673d7e1d051714cc4f54aa738e1617f8d.jpg\"]",
-                    "shangyouImg": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/xdcZ7iuXnd5nb39ebf1c7b297c5edce6088e18d2f8dd.png\"]",
-                    "shangciImg": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/iNlRSIHx622Ab39ebf1c7b297c5edce6088e18d2f8dd.png\"]",
-                    "CADImg": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/1Xikz19mHXfGd8254f61f5cece9166890c868763a7b7.jpg\",\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/xH2WHsORl3em0bd7b8f194b4a42973c1383805eb926c.jpg\"]",
-                    "adjust": 0,
-                    "shangciRemark": "xsaq",
-                    "CADRemark": "dqdx",
-                    "checiRemark": "dxaxsq",
-                    "shangyouRemark": "xsqxsq",
-                    "daodianImg": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/oOCQPkyf5Pwsd8254f61f5cece9166890c868763a7b7.jpg\"]",
-                    "nurse": "test",
-                    "toothSensitivity": 0,
-                    "tryInfo": `[{"tryImg":["https://gdcasa.cn:3010/img/images/cec790f75bd47b077a35528f97c421ea.tryImg1.jpg"],"remark":"牙齿掉落 形态不满意/解决方案 拿回去重新制作"}]`,
-                    "recoverInfo": `[{"recoverImg":["https://gdcasa.cn:3010/img/images/82d28274dab90403704fad588af5065e.recoverImg1.jpg"],"remark":"又再次脱落 粘接不行"}]`,
-                    "imgList": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/BMJwrNRm21ysb5f115f0689e514072e3415e1689861a.jpg\"]",
-                    "docterSummary": "dxwseedxwqs"
-                },
-                {
-
-                    "service_id": 165,
-                    "id": 287,
-                    "customer_id": "u7ev",
-                    "customer": "test",
-                    "dateTime": "2025-05-23",
-                    "daiyaTime": "2025-05-23",
-                    "doctor": "test",
-                    "proxy": "test",
-                    "porcelain": "爱尔创 (国产全瓷)",
-                    "tiepianColor": "red",
-                    "CAD": "csa",
-                    "checi": "dwsqcx",
-                    frontPhoto: "http://e.hiphotos.baidu.com/image/pic/item/a1ec08fa513d2697e542494057fbb2fb4316d81e.jpg",
-                    // "frontPhoto": "https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/7KWUHjdiqmwmd87292cf83ea8c4f7aa13010027ba931.jpg",
-                    "adviceContent": "dewscwcfedswcxdew",
-                    "leftFv": "https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/EVpTOxCwJ40Tb39ebf1c7b297c5edce6088e18d2f8dd.png",
-                    "rightFv": "",
-                    "front": "",
-                    "leftFvEdge": "",
-                    "rightFvEdge": "",
-                    "intentImg": "undefined",
-                    "designAdvice": "cedijn",
-                    "designList": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/jjmmMTSZxkUL0bd7b8f194b4a42973c1383805eb926c.jpg\",\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/XYhTb6eInfrcd8254f61f5cece9166890c868763a7b7.jpg\"]",
-                    "bianyuanOpen": "false",
-                    "bianyuanValue": "0",
-                    "roundOpen": "false",
-                    "roundValue": "0",
-                    "luochaOpen": "false",
-                    "luochaValue": "0",
-                    "angleOpen": "false",
-                    "angleValue": "0",
-                    "jiandunOpen": "false",
-                    "jiandunValue": "0",
-                    "qieduanOpen": "false",
-                    "qieduanValue": "0",
-                    "textureOpen": "false",
-                    "textureValue": "0",
-                    "dotOpen": "false",
-                    "dotValue": "0",
-                    "touliangOpen": "false",
-                    "touliangValue": "0",
-                    "qieduanLinearsOpen": "false",
-                    "qieduanLinearsValue": "0",
-                    "thicknessOpen": "false",
-                    "thicknessValue": "0",
-                    "createtime": "2025-05-23T15:53:11.000Z",
-                    "isPrivacy": 0,
-                    "problem": "dsxwxssw",
-                    "shangci": null,
-                    "shangyou": null,
-                    // checiImg: `['http://e.hiphotos.baidu.com/image/pic/item/a1ec08fa513d2697e542494057fbb2fb4316d81e.jpg','http://c.hiphotos.baidu.com/image/pic/item/30adcbef76094b36de8a2fe5a1cc7cd98d109d99.jpg','http://h.hiphotos.baidu.com/image/pic/item/7c1ed21b0ef41bd5f2c2a9e953da81cb39db3d1d.jpg']`,
-                    "checiImg": "[\"http://e.hiphotos.baidu.com/image/pic/item/a1ec08fa513d2697e542494057fbb2fb4316d81e.jpg\",\"http://c.hiphotos.baidu.com/image/pic/item/30adcbef76094b36de8a2fe5a1cc7cd98d109d99.jpg\",\"http://h.hiphotos.baidu.com/image/pic/item/7c1ed21b0ef41bd5f2c2a9e953da81cb39db3d1d.jpg\"]",
-                    "shangyouImg": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/xdcZ7iuXnd5nb39ebf1c7b297c5edce6088e18d2f8dd.png\"]",
-                    "shangciImg": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/iNlRSIHx622Ab39ebf1c7b297c5edce6088e18d2f8dd.png\"]",
-                    "CADImg": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/1Xikz19mHXfGd8254f61f5cece9166890c868763a7b7.jpg\",\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/xH2WHsORl3em0bd7b8f194b4a42973c1383805eb926c.jpg\"]",
-                    "adjust": 0,
-                    "shangciRemark": "xsaq",
-                    "CADRemark": "dqdx",
-                    "checiRemark": "dxaxsq",
-                    "shangyouRemark": "xsqxsq",
-                    "daodianImg": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/oOCQPkyf5Pwsd8254f61f5cece9166890c868763a7b7.jpg\"]",
-                    "nurse": "test",
-                    "toothSensitivity": 0,
-                    "tryInfo": `[{"tryImg":["https://gdcasa.cn:3010/img/images/cec790f75bd47b077a35528f97c421ea.tryImg1.jpg"],"remark":"牙齿掉落 形态不满意/解决方案 拿回去重新制作"}]`,
-                    "recoverInfo": `[{"recoverImg":["https://gdcasa.cn:3010/img/images/82d28274dab90403704fad588af5065e.recoverImg1.jpg"],"remark":"又再次脱落 粘接不行"}]`,
-                    "imgList": "[\"https://yayi-1325314533.cos.ap-shanghai.myqcloud.com/uploads/BMJwrNRm21ysb5f115f0689e514072e3415e1689861a.jpg\"]",
-                    "docterSummary": "dxwseedxwqs"
-                }
-            ],
+            isPasswordVerified: false,
+            password: '',
+            passwordError: false,
             isDownloading: false,
             downloadProgress: 0,
             downloadStatus: null,
@@ -214,82 +90,40 @@ export default {
                     },
                 }
             ],
-            // 模拟的图片URL数组，每个员工有多张照片
-            mockImages: [
-                [
-                    'http://e.hiphotos.baidu.com/image/pic/item/a1ec08fa513d2697e542494057fbb2fb4316d81e.jpg',
-                    'http://c.hiphotos.baidu.com/image/pic/item/30adcbef76094b36de8a2fe5a1cc7cd98d109d99.jpg'
-                ],
-                [
-                    'http://h.hiphotos.baidu.com/image/pic/item/7c1ed21b0ef41bd5f2c2a9e953da81cb39db3d1d.jpg',
-                    'http://e.hiphotos.baidu.com/image/pic/item/a1ec08fa513d2697e542494057fbb2fb4316d81e.jpg'
-                ],
-                [
-                    'http://c.hiphotos.baidu.com/image/pic/item/30adcbef76094b36de8a2fe5a1cc7cd98d109d99.jpg',
-                    'http://h.hiphotos.baidu.com/image/pic/item/7c1ed21b0ef41bd5f2c2a9e953da81cb39db3d1d.jpg'
-                ],
-                [
-                    'http://e.hiphotos.baidu.com/image/pic/item/a1ec08fa513d2697e542494057fbb2fb4316d81e.jpg',
-                    'http://c.hiphotos.baidu.com/image/pic/item/30adcbef76094b36de8a2fe5a1cc7cd98d109d99.jpg',
-                    'http://h.hiphotos.baidu.com/image/pic/item/7c1ed21b0ef41bd5f2c2a9e953da81cb39db3d1d.jpg'
-                ]
-            ]
+
         }
     },
     methods: {
+        verifyPassword() {
+            if (this.password === '111520888') {
+                this.isPasswordVerified = true;
+                this.passwordError = false;
+            } else {
+                this.passwordError = true;
+                this.password = '';
+            }
+        },
         // 处理日期变化
         handleDateChange(val) {
             console.log('选择的日期范围:', val);
         },
 
         // 模拟获取员工数据
-        async fetchEmployeeData() {
+        async fetchData() {
             try {
                 // 这里替换为实际的API地址
-                const response = await axios.get('https://gdcasa.cn/api/download/customer', {
-                    data: {
+                const response = await axios.post('https://gdcasa.cn/api/download/customer',
+                    {
                         startDate: this.dateRange[0],
                         endDate: this.dateRange[1]
-                    }
-                });
-                console.log('response', response)
-                return response.data;
+                    });
+                return response.data.re;
             } catch (error) {
-                console.error('获取员工数据失败:', error);
+                console.error('获取数据失败:', error);
                 // 如果API调用失败，返回模拟数据
-                return this.getMockEmployeeData();
             }
         },
 
-        // 模拟获取图片数据
-        async fetchEmployeeImages() {
-            try {
-                // 这里替换为实际的API地址
-                const response = await axios.get('https://gdcasa.cn/api/download/', {
-                    params: {
-                        employeeIds: [1, 2, 3, 4],
-                        startDate: this.dateRange[0],
-                        endDate: this.dateRange[1]
-                    }
-                });
-                return response.data;
-            } catch (error) {
-                console.error('获取员工图片失败:', error);
-                // 如果API调用失败，返回模拟图片数据
-                return []
-                // return this.mockImages;
-            }
-        },
-
-        // 获取模拟的员工数据
-        getMockEmployeeData() {
-            return [
-                { name: '张三', age: '28', department: '技术部', position: '工程师', joinDate: '2023-01-15' },
-                { name: '李四', age: '32', department: '市场部', position: '经理', joinDate: '2022-06-01' },
-                { name: '王五', age: '25', department: '人事部', position: '专员', joinDate: '2023-03-20' },
-                { name: '赵六', age: '35', department: '财务部', position: '主管', joinDate: '2021-12-10' }
-            ];
-        },
         // 将图片URL转换为base64
         async imageToBase64(url) {
             try {
@@ -361,7 +195,7 @@ export default {
             if (!jsonString) return;
 
             try {
-                const images = JSON.parse(jsonString);
+                const images = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
                 // 过滤掉视频文件
                 const imageUrls = images.filter(url => {
                     const lowerUrl = url.toLowerCase();
@@ -370,7 +204,6 @@ export default {
                         lowerUrl.endsWith('.png') ||
                         lowerUrl.endsWith('.gif');
                 });
-                console.log("uhihiuhiuhiu", imageUrls)
 
                 if (imageUrls.length === 0) return;
                 // worksheet.getColumn(col).width = imageUrls.length * 14.3; // 100px ≈ 14.3 width
@@ -401,9 +234,10 @@ export default {
         // 生成模拟的Excel数据
         async generateMockExcelData() {
             try {
-                const employeeData = await this.testData;
+                // const employeeData = await this.testData;
+                const employeeData = await this.fetchData();
                 const workbook = new ExcelJS.Workbook();
-                const worksheet = workbook.addWorksheet('员工信息');
+                const worksheet = workbook.addWorksheet('客户信息');
 
                 // 设置列宽
                 worksheet.columns = [
@@ -423,20 +257,33 @@ export default {
                     { header: '上瓷留言', key: 'shangciRemark', width: 20 },
                     { header: '上釉留言', key: 'shangyouRemark', width: 20 },
                     { header: '面诊医生建议', key: 'adviceContent', width: 30 },
-                    { header: '设计师建议', key: 'designAdvice', width: 30 },
+                    // { header: '设计师建议', key: 'designAdvice', width: 30 },
                     { header: '正面微笑照', key: 'frontPhoto', width: 20 },
                     { header: '左45度', key: 'leftFv', width: 20 },
                     { header: '右45度', key: 'rightFv', width: 20 },
                     { header: '正面扩口', key: 'front', width: 20 },
                     { header: '左45度扩口', key: 'leftFvEdge', width: 20 },
-                    { header: '右45度扩口', key: 'rightFvEdge', width: 20 },
+                    { header: '右45度扩口', key: 'rightFvEdge', width: 20 },//21
+                    { header: '设计师建议', key: 'designAdvice', width: 30 },
                     { header: '客户意向照', key: 'intentImg', width: 20 },
+                    { header: '设计师图片列表', key: 'designList', width: 30 },//24
                     { header: 'CAD设计图', key: 'CADImg', width: 20 },
                     { header: '车瓷设计图', key: 'checiImg', width: 20 },
                     { header: '上瓷设计图', key: 'shangciImg', width: 20 },
                     { header: '到店设计图', key: 'daodianImg', width: 20 },
-                    { header: '上釉设计图', key: 'shangyouImg', width: 20 },
-                    { header: '设计师图片列表', key: 'designList', width: 30 }
+                    { header: '上釉设计图', key: 'shangyouImg', width: 20 },//29
+                    { header: '试戴图片', key: 'tryImg', width: 30 },//30
+                    { header: '试戴描述', key: 'tryRemark', width: 30 },
+                    { header: '修复图片', key: 'recoverImg', width: 30 },//32
+                    { header: '修复描述', key: 'recoverRemark', width: 30 },
+                    { header: '医生戴牙调颔总结', key: 'docterSummary', width: 30 },
+                    { header: '医生戴牙调颔图片', key: 'imgList', width: 30 },//35
+                    { header: '瓷品', key: 'porcelain', width: 30 },
+                    { header: '贴片颜色', key: 'tiepianColor', width: 30 },
+                    { header: '是否做过矫正', key: 'adjust', width: 30 },
+                    { header: '是否牙齿敏感', key: 'toothSensitivity', width: 30 },
+
+
                 ];
 
                 // 设置表头样式
@@ -454,31 +301,53 @@ export default {
                     // 只渲染图片，不显示图片URL
                     const imageKeys = [
                         'frontPhoto', 'leftFv', 'rightFv', 'front', 'leftFvEdge', 'rightFvEdge', 'intentImg',
-                        'CADImg', 'checiImg', 'shangciImg', 'daodianImg', 'shangyouImg', 'designList'
+                        'CADImg', 'checiImg', 'shangciImg', 'daodianImg', 'shangyouImg', 'designList', 'tryImg', 'recoverImg', 'imgList'
                     ];
+
+                    const { tryInfo, recoverInfo, adjust, toothSensitivity } = row;
+
+                    const _tryInfo = tryInfo ? JSON.parse(tryInfo) : [];
+                    const _recoverInfo = recoverInfo ? JSON.parse(recoverInfo) : [];
+                    row['tryRemark'] = _tryInfo.map(item => item.remark).join('\n');
+                    row['recoverRemark'] = _recoverInfo.map(item => item.remark).join('\n');
+                    const tryImg = _tryInfo?.[0]?.tryImg ?? []
+                    const recoverImg = _recoverInfo?.[0]?.recoverImg ?? []
+
+                    row['tryImg'] = JSON.stringify(tryImg)
+                    row['recoverImg'] = JSON.stringify(recoverImg)
+                    row['adjust'] = adjust ? '是' : '否'
+                    row['toothSensitivity'] = toothSensitivity ? '是' : '否'
+
+
+
                     const rowData = { ...row };
+
                     imageKeys.forEach(key => rowData[key] = '');
                     const dataRow = worksheet.addRow(rowData);
                     dataRow.height = 100;
                     dataRow.alignment = { vertical: 'middle', horizontal: 'center' };
                     const rowNum = dataRow.number;
 
+
                     // 处理单张图片
-                    await this.handleSingleImage(row.frontPhoto, worksheet, rowNum, 17, workbook);
-                    await this.handleSingleImage(row.leftFv, worksheet, rowNum, 18, workbook);
-                    await this.handleSingleImage(row.rightFv, worksheet, rowNum, 19, workbook);
-                    await this.handleSingleImage(row.front, worksheet, rowNum, 20, workbook);
-                    await this.handleSingleImage(row.leftFvEdge, worksheet, rowNum, 21, workbook);
-                    await this.handleSingleImage(row.rightFvEdge, worksheet, rowNum, 22, workbook);
+                    await this.handleSingleImage(row.frontPhoto, worksheet, rowNum, 16, workbook);
+                    await this.handleSingleImage(row.leftFv, worksheet, rowNum, 17, workbook);
+                    await this.handleSingleImage(row.rightFv, worksheet, rowNum, 18, workbook);
+                    await this.handleSingleImage(row.front, worksheet, rowNum, 19, workbook);
+                    await this.handleSingleImage(row.leftFvEdge, worksheet, rowNum, 20, workbook);
+                    await this.handleSingleImage(row.rightFvEdge, worksheet, rowNum, 21, workbook);
                     await this.handleSingleImage(row.intentImg, worksheet, rowNum, 23, workbook);
 
                     // 处理多张图片
-                    await this.handleMultipleImages(row.CADImg, worksheet, rowNum, 24, workbook);
-                    await this.handleMultipleImages(row.checiImg, worksheet, rowNum, 25, workbook);
-                    await this.handleMultipleImages(row.shangciImg, worksheet, rowNum, 26, workbook);
-                    await this.handleMultipleImages(row.daodianImg, worksheet, rowNum, 27, workbook);
-                    await this.handleMultipleImages(row.shangyouImg, worksheet, rowNum, 28, workbook);
-                    await this.handleMultipleImages(row.designList, worksheet, rowNum, 29, workbook);
+                    await this.handleMultipleImages(row.CADImg, worksheet, rowNum, 25, workbook);
+                    await this.handleMultipleImages(row.checiImg, worksheet, rowNum, 26, workbook);
+                    await this.handleMultipleImages(row.shangciImg, worksheet, rowNum, 27, workbook);
+                    await this.handleMultipleImages(row.daodianImg, worksheet, rowNum, 28, workbook);
+                    await this.handleMultipleImages(row.shangyouImg, worksheet, rowNum, 29, workbook);
+                    await this.handleMultipleImages(row.designList, worksheet, rowNum, 24, workbook);
+                    await this.handleMultipleImages(row.tryImg, worksheet, rowNum, 30, workbook);
+                    await this.handleMultipleImages(row.recoverImg, worksheet, rowNum, 32, workbook);
+                    await this.handleMultipleImages(row.imgList, worksheet, rowNum, 35, workbook);
                 }
 
                 // 生成Excel文件
@@ -510,10 +379,10 @@ export default {
 
         async handleDownload() {
             try {
-                // if (!this.dateRange || this.dateRange.length !== 2) {
-                //     this.downloadStatus = { type: 'error', message: '请选择日期范围' };
-                //     return;
-                // }
+                if (!this.dateRange || this.dateRange.length !== 2) {
+                    this.downloadStatus = { type: 'error', message: '请选择日期范围' };
+                    return;
+                }
 
                 this.isDownloading = true;
                 this.downloadProgress = 0;
@@ -648,5 +517,23 @@ export default {
 .download-status.error {
     background-color: #ffebee;
     color: #c62828;
+}
+.password-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+}
+
+.password-input {
+    display: flex;
+    gap: 10px;
+    width: 300px;
+}
+
+.password-error {
+    color: #f56c6c;
+    font-size: 14px;
 }
 </style>
